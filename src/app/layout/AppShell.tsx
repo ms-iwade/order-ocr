@@ -48,7 +48,7 @@ const DRAWER_WIDTH = 240;
 const AppShellContent = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const [drawerOpen, setDrawerOpen] = useState(!isMobile);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(
     null
   );
@@ -69,10 +69,6 @@ const AppShellContent = () => {
 
   // ボトムナビゲーション用のアイテムを取得
   // const bottomNavigationItems = getBottomNavigationItems();
-
-  useEffect(() => {
-    setDrawerOpen(!isMobile);
-  }, [isMobile]);
 
   // 現在のパスに基づいてボトムナビゲーションの選択状態を更新
   // useEffect(() => {

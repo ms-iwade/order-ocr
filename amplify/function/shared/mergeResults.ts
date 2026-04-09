@@ -16,6 +16,7 @@ interface TableLineItem {
 /** テーブルOCR結果 */
 interface TableResult {
   thinking?: string;
+  processingTimeMs?: number;
   pages: Array<{
     page: number;
     lineItems: TableLineItem[];
@@ -29,12 +30,12 @@ interface TableResult {
 interface HandwrittenItem {
   itemCode: string | null;
   deliveryDate: string | null;
-  note: string | null;
 }
 
 /** 手書きOCR結果 */
 interface HandwritingResult {
   thinking?: string;
+  processingTimeMs?: number;
   pages: Array<{
     page: number;
     handwrittenItems: HandwrittenItem[];
@@ -49,7 +50,7 @@ interface MergedLineItem {
   itemCode: string | null;
   quantity: number | null;
   deliveryDate: string | null;
-  handwrittenNote?: string | null;
+  handwrittenDeliveryDate?: string | null;
   deliveryDateSource?: 'printed' | 'handwritten';
 }
 
@@ -58,6 +59,8 @@ interface MergedResult {
   thinking?: string;
   tableThinking?: string;
   handwritingThinking?: string;
+  tableProcessingTimeMs?: number;
+  handwritingProcessingTimeMs?: number;
   pages: Array<{
     page: number;
     lineItems: MergedLineItem[];
@@ -77,6 +80,8 @@ export function mergeResults(
   if (!tableResult || tableResult.error) {
     return {
       thinking: tableResult?.message || 'テーブルOCRが失敗しました',
+      tableProcessingTimeMs: tableResult?.processingTimeMs,
+      handwritingProcessingTimeMs: handwritingResult?.processingTimeMs,
       pages: [],
       confidence: 'low',
     };
@@ -112,11 +117,9 @@ export function mergeResults(
         return {
           itemCode: item.itemCode,
           quantity: item.quantity,
-          deliveryDate: handwritten.deliveryDate || item.deliveryDate,
-          handwrittenNote: handwritten.note,
-          deliveryDateSource: handwritten.deliveryDate
-            ? ('handwritten' as const)
-            : ('printed' as const),
+          deliveryDate: item.deliveryDate,
+          handwrittenDeliveryDate: handwritten.deliveryDate,
+          deliveryDateSource: 'printed' as const,
         };
       }
 
@@ -124,6 +127,7 @@ export function mergeResults(
         itemCode: item.itemCode,
         quantity: item.quantity,
         deliveryDate: item.deliveryDate,
+        handwrittenDeliveryDate: null,
         deliveryDateSource: 'printed' as const,
       };
     });
@@ -144,6 +148,8 @@ export function mergeResults(
     thinking: thinkingParts.join('\n\n'),
     tableThinking: tableResult.thinking || undefined,
     handwritingThinking: handwritingResult?.thinking || undefined,
+    tableProcessingTimeMs: tableResult.processingTimeMs,
+    handwritingProcessingTimeMs: handwritingResult?.processingTimeMs,
     pages: mergedPages,
     confidence,
   };

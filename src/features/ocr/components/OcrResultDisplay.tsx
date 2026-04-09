@@ -25,6 +25,18 @@ interface OcrResultDisplayProps {
   fileName: string;
 }
 
+function formatProcessingTime(processingTimeMs?: number): string {
+  if (processingTimeMs == null) {
+    return '-';
+  }
+
+  if (processingTimeMs < 1000) {
+    return `${processingTimeMs} ms`;
+  }
+
+  return `${(processingTimeMs / 1000).toFixed(2)} 秒`;
+}
+
 export function OcrResultDisplay({ result, fileName }: OcrResultDisplayProps) {
   const confidenceColor =
     result.confidence === "high"
@@ -54,6 +66,20 @@ export function OcrResultDisplay({ result, fileName }: OcrResultDisplayProps) {
         <Typography variant="body2" color="text.secondary">
           ファイル: {fileName}
         </Typography>
+        <Box sx={{ display: "flex", gap: 1, mt: 1, flexWrap: "wrap" }}>
+          <Chip
+            label={`テーブルOCR: ${formatProcessingTime(result.tableProcessingTimeMs)}`}
+            size="small"
+            variant="outlined"
+            icon={<TableChartIcon />}
+          />
+          <Chip
+            label={`手書きOCR: ${formatProcessingTime(result.handwritingProcessingTimeMs)}`}
+            size="small"
+            variant="outlined"
+            icon={<EditIcon />}
+          />
+        </Box>
       </Paper>
 
       {result.tableThinking && (
@@ -129,9 +155,9 @@ export function OcrResultDisplay({ result, fileName }: OcrResultDisplayProps) {
                 <TableHead>
                   <TableRow sx={{ bgcolor: "grey.200" }}>
                     <TableCell align="center" sx={{ width: "25%" }}>品番</TableCell>
-                    <TableCell align="center" sx={{ width: "20%" }}>発注数</TableCell>
-                    <TableCell align="center" sx={{ width: "25%" }}>納期</TableCell>
-                    <TableCell align="center" sx={{ width: "30%" }}>手書きメモ</TableCell>
+                    <TableCell align="center" sx={{ width: "18%" }}>発注数</TableCell>
+                    <TableCell align="center" sx={{ width: "27%" }}>納期</TableCell>
+                    <TableCell align="center" sx={{ width: "30%" }}>手書き納期</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -147,16 +173,14 @@ export function OcrResultDisplay({ result, fileName }: OcrResultDisplayProps) {
                         <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
                           {item.deliveryDate ?? "-"}
                           {item.deliveryDateSource === "handwritten" && (
-                            <Tooltip title="手書きメモから取得">
+                            <Tooltip title="手書きで読み取った日付を採用">
                               <EditIcon fontSize="small" color="warning" sx={{ fontSize: 16 }} />
                             </Tooltip>
                           )}
                         </Box>
                       </TableCell>
                       <TableCell align="center">
-                        <Typography variant="body2" color="text.secondary" sx={{ fontSize: "0.8rem" }}>
-                          {item.handwrittenNote ?? "-"}
-                        </Typography>
+                        {item.handwrittenDeliveryDate ?? "-"}
                       </TableCell>
                     </TableRow>
                   ))}

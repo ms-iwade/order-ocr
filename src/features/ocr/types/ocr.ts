@@ -2,7 +2,7 @@ export interface OcrLineItem {
   itemCode: string | null;
   quantity: number | null;
   deliveryDate: string | null;
-  handwrittenNote?: string | null;
+  handwrittenDeliveryDate?: string | null;
   deliveryDateSource?: 'printed' | 'handwritten';
 }
 
@@ -15,6 +15,8 @@ export interface OcrResult {
   thinking?: string;
   tableThinking?: string;
   handwritingThinking?: string;
+  tableProcessingTimeMs?: number;
+  handwritingProcessingTimeMs?: number;
   pages: OcrPage[];
   confidence: 'high' | 'medium' | 'low';
 }
