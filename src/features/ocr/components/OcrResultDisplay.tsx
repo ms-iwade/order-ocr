@@ -157,7 +157,7 @@ export function OcrResultDisplay({ result, fileName }: OcrResultDisplayProps) {
                     <TableCell align="center" sx={{ width: "25%" }}>品番</TableCell>
                     <TableCell align="center" sx={{ width: "18%" }}>発注数</TableCell>
                     <TableCell align="center" sx={{ width: "27%" }}>納期</TableCell>
-                    <TableCell align="center" sx={{ width: "30%" }}>手書き納期</TableCell>
+                    <TableCell align="center" sx={{ width: "30%" }}>手書き</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
