@@ -1,10 +1,7 @@
-import {
-  DynamoDBClient,
-  UpdateItemCommand,
-} from '@aws-sdk/client-dynamodb';
-import { Amplify } from 'aws-amplify';
-import { generateClient } from 'aws-amplify/data';
-import type { Schema } from '../../data/resource';
+import { DynamoDBClient, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
+import { Amplify } from "aws-amplify";
+import { generateClient } from "aws-amplify/data";
+import type { Schema } from "../../data/resource";
 
 /** テーブルOCRの行アイテム */
 interface TableLineItem {
@@ -21,7 +18,7 @@ interface TableResult {
     page: number;
     lineItems: TableLineItem[];
   }>;
-  confidence: 'high' | 'medium' | 'low';
+  confidence: "high" | "medium" | "low";
   error?: boolean;
   message?: string;
 }
@@ -40,7 +37,7 @@ interface HandwritingResult {
     page: number;
     handwrittenItems: HandwrittenItem[];
   }>;
-  confidence: 'high' | 'medium' | 'low';
+  confidence: "high" | "medium" | "low";
   error?: boolean;
   message?: string;
 }
@@ -51,7 +48,7 @@ interface MergedLineItem {
   quantity: number | null;
   deliveryDate: string | null;
   handwrittenDeliveryDate?: string | null;
-  deliveryDateSource?: 'printed' | 'handwritten';
+  deliveryDateSource?: "printed" | "handwritten";
 }
 
 /** マージ済み結果 */
@@ -65,7 +62,7 @@ interface MergedResult {
     page: number;
     lineItems: MergedLineItem[];
   }>;
-  confidence: 'high' | 'medium' | 'low';
+  confidence: "high" | "medium" | "low";
 }
 
 /**
@@ -79,11 +76,11 @@ export function mergeResults(
   // テーブル結果がない場合（エラー等）は空結果を返す
   if (!tableResult || tableResult.error) {
     return {
-      thinking: tableResult?.message || 'テーブルOCRが失敗しました',
+      thinking: tableResult?.message || "テーブルOCRが失敗しました",
       tableProcessingTimeMs: tableResult?.processingTimeMs,
       handwritingProcessingTimeMs: handwritingResult?.processingTimeMs,
       pages: [],
-      confidence: 'low',
+      confidence: "low",
     };
   }
 
@@ -110,7 +107,7 @@ export function mergeResults(
 
   const mergedPages = tableResult.pages.map((page) => {
     const mergedLineItems: MergedLineItem[] = page.lineItems.map((item) => {
-      const key = item.itemCode ? `${page.page}:${item.itemCode}` : '';
+      const key = item.itemCode ? `${page.page}:${item.itemCode}` : "";
       const handwritten = key ? handwritingIndex.get(key) : undefined;
 
       if (handwritten) {
@@ -119,7 +116,7 @@ export function mergeResults(
           quantity: item.quantity,
           deliveryDate: item.deliveryDate,
           handwrittenDeliveryDate: handwritten.deliveryDate,
-          deliveryDateSource: 'printed' as const,
+          deliveryDateSource: "printed" as const,
         };
       }
 
@@ -128,7 +125,7 @@ export function mergeResults(
         quantity: item.quantity,
         deliveryDate: item.deliveryDate,
         handwrittenDeliveryDate: null,
-        deliveryDateSource: 'printed' as const,
+        deliveryDateSource: "printed" as const,
       };
     });
 
@@ -138,14 +135,15 @@ export function mergeResults(
   // confidenceは両方の低い方を採用
   const confidenceLevels = { high: 3, medium: 2, low: 1 };
   const tableConf = confidenceLevels[tableResult.confidence] || 1;
-  const hwConf = handwritingResult && !handwritingResult.error
-    ? confidenceLevels[handwritingResult.confidence] || 1
-    : 3; // 手書き結果がない場合はテーブルの信頼度をそのまま使う
+  const hwConf =
+    handwritingResult && !handwritingResult.error
+      ? confidenceLevels[handwritingResult.confidence] || 1
+      : 3; // 手書き結果がない場合はテーブルの信頼度をそのまま使う
   const minConf = Math.min(tableConf, hwConf);
-  const confidence = minConf >= 3 ? 'high' : minConf >= 2 ? 'medium' : 'low';
+  const confidence = minConf >= 3 ? "high" : minConf >= 2 ? "medium" : "low";
 
   return {
-    thinking: thinkingParts.join('\n\n'),
+    thinking: thinkingParts.join("\n\n"),
     tableThinking: tableResult.thinking || undefined,
     handwritingThinking: handwritingResult?.thinking || undefined,
     tableProcessingTimeMs: tableResult.processingTimeMs,
@@ -155,7 +153,7 @@ export function mergeResults(
   };
 }
 
-const dynamodb = new DynamoDBClient({ region: 'ap-northeast-1' });
+const dynamodb = new DynamoDBClient({ region: "ap-northeast-1" });
 
 /**
  * 部分結果をDynamoDBにアトミックに書き込み、カウンタをインクリメント。
@@ -163,40 +161,37 @@ const dynamodb = new DynamoDBClient({ region: 'ap-northeast-1' });
  */
 export async function writePartialAndMergeIfReady(params: {
   jobId: string;
-  partialField: 'tableResult' | 'handwritingResult';
+  partialField: "tableResult" | "handwritingResult";
   partialResult: unknown;
   tableName: string;
   amplifyClient: ReturnType<typeof generateClient<Schema>>;
 }): Promise<void> {
-  const { jobId, partialField, partialResult, tableName, amplifyClient } = params;
+  const { jobId, partialField, partialResult, tableName, amplifyClient } =
+    params;
 
   // アトミックに部分結果を書き込み＋カウンタインクリメント
   const updateResult = await dynamodb.send(
     new UpdateItemCommand({
       TableName: tableName,
       Key: { id: { S: jobId } },
-      UpdateExpression:
-        'SET #partialField = :partialResult ADD #counter :one',
+      UpdateExpression: "SET #partialField = :partialResult ADD #counter :one",
       ExpressionAttributeNames: {
-        '#partialField': partialField,
-        '#counter': 'subJobCount',
+        "#partialField": partialField,
+        "#counter": "subJobCount",
       },
       ExpressionAttributeValues: {
-        ':partialResult': { S: JSON.stringify(partialResult) },
-        ':one': { N: '1' },
+        ":partialResult": { S: JSON.stringify(partialResult) },
+        ":one": { N: "1" },
       },
-      ReturnValues: 'ALL_NEW',
+      ReturnValues: "ALL_NEW",
     })
   );
 
-  const newCount = parseInt(
-    updateResult.Attributes?.subJobCount?.N ?? '0'
-  );
+  const newCount = parseInt(updateResult.Attributes?.subJobCount?.N ?? "0");
 
   if (newCount === 2) {
     // 最後に終わったLambda → マージ処理を実行
-    const tableResultStr =
-      updateResult.Attributes?.tableResult?.S ?? null;
+    const tableResultStr = updateResult.Attributes?.tableResult?.S ?? null;
     const handwritingResultStr =
       updateResult.Attributes?.handwritingResult?.S ?? null;
 
@@ -211,7 +206,7 @@ export async function writePartialAndMergeIfReady(params: {
 
     await amplifyClient.models.OcrJob.update({
       id: jobId,
-      status: 'COMPLETED',
+      status: "COMPLETED",
       result: JSON.stringify(merged),
     });
   }
