@@ -1,5 +1,5 @@
 // アプリケーションのタイトルをここに設定して下さい。
-export const APP_TITLE = "Gen2template";
+export const APP_TITLE = "order-ocr";
 
 /**
  * バージョン情報
