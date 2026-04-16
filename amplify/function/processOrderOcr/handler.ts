@@ -1,24 +1,25 @@
-import type { Schema } from '../../data/resource';
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import type { Schema } from "../../data/resource";
+import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
 import {
   BedrockRuntimeClient,
   InvokeModelCommand,
-} from '@aws-sdk/client-bedrock-runtime';
-import { Amplify } from 'aws-amplify';
-import { generateClient } from 'aws-amplify/data';
-import { getAmplifyDataClientConfig } from '@aws-amplify/backend/function/runtime';
-import { env } from '$amplify/env/processOrderOcr';
-import { writePartialAndMergeIfReady } from '../shared/mergeResults';
+} from "@aws-sdk/client-bedrock-runtime";
+import { Amplify } from "aws-amplify";
+import { generateClient } from "aws-amplify/data";
+import { getAmplifyDataClientConfig } from "@aws-amplify/backend/function/runtime";
+import { env } from "$amplify/env/processOrderOcr";
+import { writePartialAndMergeIfReady } from "../shared/mergeResults";
 
-const S3_REGION = 'ap-northeast-1';
-const BEDROCK_REGION = 'us-east-1';
-const MODEL_ID = 'us.anthropic.claude-opus-4-6-v1';
+const S3_REGION = "ap-northeast-1";
+const BEDROCK_REGION = "us-east-1";
+const MODEL_ID = "us.anthropic.claude-opus-4-6-v1";
 
 const s3 = new S3Client({ region: S3_REGION });
 const bedrock = new BedrockRuntimeClient({ region: BEDROCK_REGION });
 
 // Amplify Data クライアント設定
-const { resourceConfig, libraryOptions } = await getAmplifyDataClientConfig(env);
+const { resourceConfig, libraryOptions } =
+  await getAmplifyDataClientConfig(env);
 Amplify.configure(resourceConfig, libraryOptions);
 const client = generateClient<Schema>();
 
@@ -105,7 +106,7 @@ export const handler = async (event: {
   const ocrJobTableName = process.env.OCRJOB_TABLE_NAME;
 
   if (!ocrJobTableName) {
-    throw new Error('OCRJOB_TABLE_NAME environment variable is not set');
+    throw new Error("OCRJOB_TABLE_NAME environment variable is not set");
   }
 
   let partialResult: unknown;
@@ -114,7 +115,7 @@ export const handler = async (event: {
     // S3からPDFを取得
     const s3BucketName = process.env.S3_BUCKET_NAME;
     if (!s3BucketName) {
-      throw new Error('S3_BUCKET_NAME environment variable is not set');
+      throw new Error("S3_BUCKET_NAME environment variable is not set");
     }
 
     const s3Response = await s3.send(
@@ -125,31 +126,31 @@ export const handler = async (event: {
     );
 
     const pdfBytes = await s3Response.Body!.transformToByteArray();
-    const pdfBase64 = Buffer.from(pdfBytes).toString('base64');
+    const pdfBase64 = Buffer.from(pdfBytes).toString("base64");
 
     // Bedrock Claude にPDFを送信してOCR処理（表全体）
     const bedrockResponse = await bedrock.send(
       new InvokeModelCommand({
         modelId: MODEL_ID,
-        contentType: 'application/json',
-        accept: 'application/json',
+        contentType: "application/json",
+        accept: "application/json",
         body: JSON.stringify({
-          anthropic_version: 'bedrock-2023-05-31',
+          anthropic_version: "bedrock-2023-05-31",
           max_tokens: 8192,
           messages: [
             {
-              role: 'user',
+              role: "user",
               content: [
                 {
-                  type: 'document',
+                  type: "document",
                   source: {
-                    type: 'base64',
-                    media_type: 'application/pdf',
+                    type: "base64",
+                    media_type: "application/pdf",
                     data: pdfBase64,
                   },
                 },
                 {
-                  type: 'text',
+                  type: "text",
                   text: OCR_PROMPT,
                 },
               ],
@@ -159,21 +160,23 @@ export const handler = async (event: {
       })
     );
 
-    const responseBody = JSON.parse(new TextDecoder().decode(bedrockResponse.body));
+    const responseBody = JSON.parse(
+      new TextDecoder().decode(bedrockResponse.body)
+    );
     const ocrResultText = responseBody.content[0].text;
 
     // JSON部分を抽出（Claudeがコードブロックで返す場合に対応）
     const jsonMatch = ocrResultText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error('OCR結果からJSONを抽出できませんでした');
+      throw new Error("OCR結果からJSONを抽出できませんでした");
     }
 
     partialResult = JSON.parse(jsonMatch[0]);
   } catch (error) {
-    console.error('テーブルOCR処理エラー:', error);
+    console.error("テーブルOCR処理エラー:", error);
     partialResult = {
       error: true,
-      message: error instanceof Error ? error.message : 'Unknown error',
+      message: error instanceof Error ? error.message : "Unknown error",
     };
   }
 
@@ -181,20 +184,20 @@ export const handler = async (event: {
   try {
     await writePartialAndMergeIfReady({
       jobId,
-      partialField: 'tableResult',
+      partialField: "tableResult",
       partialResult,
       tableName: ocrJobTableName,
       amplifyClient: client,
     });
   } catch (mergeError) {
-    console.error('マージ処理エラー:', mergeError);
+    console.error("マージ処理エラー:", mergeError);
     await client.models.OcrJob.update({
       id: jobId,
-      status: 'FAILED',
+      status: "FAILED",
       errorMessage:
         mergeError instanceof Error
           ? mergeError.message
-          : 'Unknown merge error',
+          : "Unknown merge error",
     });
   }
 };
