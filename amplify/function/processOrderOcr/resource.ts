@@ -5,5 +5,5 @@ export const processOrderOcr = defineFunction({
   resourceGroupName: "data",
   runtime: 20,
   timeoutSeconds: 180,
-  memoryMB: 1024,
+  memoryMB: 4048,
 });
