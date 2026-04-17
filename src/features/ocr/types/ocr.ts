@@ -3,7 +3,7 @@ export interface OcrLineItem {
   quantity: number | null;
   deliveryDate: string | null;
   handwrittenDeliveryDate?: string | null;
-  deliveryDateSource?: 'printed' | 'handwritten';
+  deliveryDateSource?: "printed" | "handwritten";
 }
 
 export interface OcrPage {
@@ -12,20 +12,18 @@ export interface OcrPage {
 }
 
 export interface OcrResult {
-  thinking?: string;
-  tableThinking?: string;
-  handwritingThinking?: string;
+  errorMessage?: string;
   tableProcessingTimeMs?: number;
   handwritingProcessingTimeMs?: number;
   pages: OcrPage[];
-  confidence: 'high' | 'medium' | 'low';
+  confidence: "high" | "medium" | "low";
 }
 
 export interface OcrResponse {
   statusCode: number;
   fileName: string;
   s3Key: string;
-  status: 'COMPLETED' | 'FAILED';
+  status: "COMPLETED" | "FAILED";
   result: string | null;
   errorMessage?: string;
 }

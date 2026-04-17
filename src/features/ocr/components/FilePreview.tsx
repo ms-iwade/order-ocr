@@ -15,12 +15,19 @@ export function FilePreview({
 
   return (
     <Paper
-      sx={{ p: 2, height: "100%", display: "flex", flexDirection: "column" }}
+      sx={{
+        p: 2,
+        height: "100%",
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+      }}
     >
       <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
         原本プレビュー: {fileName}
       </Typography>
-      <Box sx={{ flex: 1, minHeight: 500, overflow: "auto" }}>
+      <Box sx={{ flex: 1, minHeight: 500, overflow: "hidden" }}>
         {isPdf ? (
           <iframe
             src={previewUrl}
@@ -30,6 +37,7 @@ export function FilePreview({
               height: "100%",
               minHeight: 500,
               border: "none",
+              display: "block",
             }}
           />
         ) : (

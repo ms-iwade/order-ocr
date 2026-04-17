@@ -12,7 +12,6 @@ interface TableLineItem {
 
 /** テーブルOCR結果 */
 interface TableResult {
-  thinking?: string;
   processingTimeMs?: number;
   pages: Array<{
     page: number;
@@ -31,7 +30,6 @@ interface HandwrittenItem {
 
 /** 手書きOCR結果 */
 interface HandwritingResult {
-  thinking?: string;
   processingTimeMs?: number;
   pages: Array<{
     page: number;
@@ -53,9 +51,7 @@ interface MergedLineItem {
 
 /** マージ済み結果 */
 interface MergedResult {
-  thinking?: string;
-  tableThinking?: string;
-  handwritingThinking?: string;
+  errorMessage?: string;
   tableProcessingTimeMs?: number;
   handwritingProcessingTimeMs?: number;
   pages: Array<{
@@ -76,7 +72,7 @@ export function mergeResults(
   // テーブル結果がない場合（エラー等）は空結果を返す
   if (!tableResult || tableResult.error) {
     return {
-      thinking: tableResult?.message || "テーブルOCRが失敗しました",
+      errorMessage: tableResult?.message || "テーブルOCRが失敗しました",
       tableProcessingTimeMs: tableResult?.processingTimeMs,
       handwritingProcessingTimeMs: handwritingResult?.processingTimeMs,
       pages: [],
@@ -95,14 +91,6 @@ export function mergeResults(
         }
       }
     }
-  }
-
-  const thinkingParts: string[] = [];
-  if (tableResult.thinking) {
-    thinkingParts.push(`【テーブル読み取り】${tableResult.thinking}`);
-  }
-  if (handwritingResult?.thinking) {
-    thinkingParts.push(`【手書き読み取り】${handwritingResult.thinking}`);
   }
 
   const mergedPages = tableResult.pages.map((page) => {
@@ -143,9 +131,10 @@ export function mergeResults(
   const confidence = minConf >= 3 ? "high" : minConf >= 2 ? "medium" : "low";
 
   return {
-    thinking: thinkingParts.join("\n\n"),
-    tableThinking: tableResult.thinking || undefined,
-    handwritingThinking: handwritingResult?.thinking || undefined,
+    errorMessage:
+      handwritingResult && handwritingResult.error
+        ? handwritingResult.message || "手書きOCRが失敗しました"
+        : undefined,
     tableProcessingTimeMs: tableResult.processingTimeMs,
     handwritingProcessingTimeMs: handwritingResult?.processingTimeMs,
     pages: mergedPages,
