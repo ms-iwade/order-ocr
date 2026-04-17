@@ -166,6 +166,7 @@ export const handler = async (event: {
     const responseBody = JSON.parse(
       new TextDecoder().decode(bedrockResponse.body)
     );
+    console.log("Token usage:", JSON.stringify(responseBody.usage));
     const ocrResultText = responseBody.content[0].text;
 
     // JSON部分を抽出
